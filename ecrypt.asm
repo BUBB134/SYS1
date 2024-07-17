@@ -1,247 +1,222 @@
-#set RD to 1024
-#set RC to 576
-#nibble1:
-#	RB = 4
-#	TMP = 0
-#	RA = pixel at RD
-#	mask of lower nibble
-#	encrypt nibble
-#nibble2:
-#	RB = 3
-#invert RA
-#	RA = RA + TMP
-#	shift RA 4 bits left
-#	TMP = RA
-#	RA = pixel at RD
-#	shift nibble 2 to end
-#	mask off lower nibble
-#	encrypt nibble
-#nibble3:
-#	RB = 2
-#	invert RA
-#	RA = RA + TMP
-#	shift RA 4 bits left
-#	TMP = RA
-#	RA = pixel at RD
-#	shift nibble 3 to end
-#	mask off lower nibble
-#	encrypt nibble
-#nibble4:
-#	RB = 1
-#	invert RA
-#	RA = RA + TMP
-#	shift RA 4 bits left
-#	TMP = RA
-#	RA = pixel at RD
-#	shift nibble 4 to end
-#	mask off lower nibble
-#	encrypt nibble
-#encrypt#
-#	encrypt nibble
-#	check_nib
-#checknib:
-#	if rb = 4:
-#		nibble2
-#	...
-#	if rb = 1:
-#		increment
-#increment:
-#	RD + 1
-#	RC - 1
-#	if rc = 0:
-#		finish and create output
-#	else:
-#		nibble1
+#initialise base address and offset
+#loop through each value in the image
+#   starting from the bottom right corner
+#   split 16bit values into four nibbles
+#   sub each nibble using the encryption table
+#   combine back into the 16bit value
+#   invert all the bits in the 16bit value
+#   store the new value back into memory
+#write a value to 0xfff to indicate the end of the image
+#jump to an infinite loop
 
-start:
-    move rd 0x40
-    rol rd
-    rol rd
-    rol rd
-    rol rd
-    move ra 0x24
-    rol ra
-    rol ra
-    rol ra
-    rol ra
-    store ra count
-    move rb 0xf
-	call nibble1
-    
-nibble1:
-    move ra 0x0
-    load ra (rd)
-    and ra 0xf
-    call encrypt
-    jump nibble2
-    
+move rc 0x00
+move rd 0x23
+rol rd
+rol rd
+rol rd
+rol rd
+add rd 0x0f
+jumpu main
 
-nibble2:
-	xor ra rb
-    add rc ra
-    rol rc
-    rol rc
-    rol rc
-    rol rc
-    load ra (rd)
-    rol ra
-    rol ra
-    rol ra
-    rol ra
-    and ra 0xf
+main:
+    move rc 0x00
+    move rb rd
+    add rb topLeft
+    load ra (rb)
+    move rb ra
+    and rb 0x0f
     call encrypt
-    jump nibble3
-nibble3:
-    xor ra rb
-    add rc ra
-    rol rc
-    rol rc
-    rol rc
-    rol rc
-    load ra (rd)
+    xor rc 0xf
     rol ra
     rol ra
     rol ra
     rol ra
-    rol ra
-    rol ra
-    rol ra
-    rol ra
-    and ra 0xf
+    move rb ra
+    and rb 0x0f
     call encrypt
-    jump nibble4
+    xor rc 0xf
+    rol ra
+    rol ra
+    rol ra
+    rol ra
+    move rb ra
+    and rb 0x0f
+    call encrypt
+    xor rc 0xf
+    rol ra
+    rol ra
+    rol ra
+    rol ra
+    move rb ra
+    and rb 0x0f
+    call encrypt
+    xor rc 0xf
+    move ra rc
+    move rb rd
+    add rb topLeft
+    store ra (rb)
+    and rd 0xff
+    jumpz final_func
+    sub rd 0x01
+    jumpu main
 
-nibble4:
-    xor ra rb
-    add rc ra
-    rol rc
-    rol rc
-    rol rc
-    rol rc
-    load ra (rd)
-    rol ra
-    rol ra
-    rol ra
-    rol ra
-    rol ra
-    rol ra
-    rol ra
-    rol ra
-    rol ra
-    rol ra
-    rol ra
-    rol ra
-    and ra 0xf
-    call encrypt
-    jump increment
+final_func:
+    move ra 0xff
+    store ra to location 0xfff
+    jumpu to inf_loop
+
+inf_loop:
+    jumpu to inf_loop
 
 encrypt:
-    add ra 0x01
-    sub ra 0x01
+    and rb 0xff
     jumpz encrypt_0
-    sub ra 0x01
+    sub rb 0x01
     jumpz encrypt_1
-    sub ra 0x01
+    sub rb 0x01
     jumpz encrypt_2
-    sub ra 0x01
+    sub rb 0x01
     jumpz encrypt_3
-    sub ra 0x01
+    sub rb 0x01
     jumpz encrypt_4
-    sub ra 0x01
+    sub rb 0x01
     jumpz encrypt_5
-    sub ra 0x01
+    sub rb 0x01
     jumpz encrypt_6
-    sub ra 0x01
+    sub rb 0x01
     jumpz encrypt_7
-    sub ra 0x01
+    sub rb 0x01
     jumpz encrypt_8
-    sub ra 0x01
+    sub rb 0x01
     jumpz encrypt_9
-    sub ra 0x01
+    sub rb 0x01
     jumpz encrypt_a
-    sub ra 0x01
+    sub rb 0x01
     jumpz encrypt_b
-    sub ra 0x01
+    sub rb 0x01
     jumpz encrypt_c
-    sub ra 0x01
+    sub rb 0x01
     jumpz encrypt_d
-    sub ra 0x01
+    sub rb 0x01
     jumpz encrypt_e
-    sub ra 0x01
+    sub rb 0x01
     jumpz encrypt_f
 
-increment:
-	xor ra rb
-    add rc ra
-    rol rc
-    rol rc
-    rol rc
-    rol rc
-    store ra (rd)
-    add rd 0x1
-    load ra count
-    sub ra 0x1
-    jumpz final
-    store ra count
-    jump nibble1
-
-final:
-    move ra 0xff
-    store ra 0xfff
-    jump infinite_loop
-
-infinite_loop:
-    jump infinite_loop
-
-
 encrypt_0:
-    move ra 0xA
+    add rc 0xA
+    rol rc
+    rol rc
+    rol rc
+    rol rc
     ret
 encrypt_1:
-    move ra 0x6
+    add rc 0x6
+    rol rc
+    rol rc
+    rol rc
+    rol rc
     ret
 encrypt_2:
-    move ra 0xE
+    add rc 0xE
+    rol rc
+    rol rc
+    rol rc
+    rol rc
     ret
 encrypt_3:
-    move ra 0x1
+    add rc 0x1
+    rol rc
+    rol rc
+    rol rc
+    rol rc
     ret
 encrypt_4:
-    move ra 0x9
+    add rc 0x9
+    rol rc
+    rol rc
+    rol rc
+    rol rc
     ret
 encrypt_5:
-    move ra 0x5
+    add rc 0x5
+    rol rc
+    rol rc
+    rol rc
+    rol rc
     ret
 encrypt_6:
-    move ra 0xD
+    add rc 0xD
+    rol rc
+    rol rc
+    rol rc
+    rol rc
     ret
 encrypt_7:
-    move ra 0x3
+    add rc 0x3
+    rol rc
+    rol rc
+    rol rc
+    rol rc
     ret
 encrypt_8:
-    move ra 0xB
+    add rc 0xB
+    rol rc
+    rol rc
+    rol rc
+    rol rc
     ret
 encrypt_9:
-    move ra 0x7
+    add rc 0x7
+    rol rc
+    rol rc
+    rol rc
+    rol rc
     ret
 encrypt_a:
-    move ra 0xF
+    add rc 0xF
+    rol rc
+    rol rc
+    rol rc
+    rol rc
     ret
 encrypt_b:
-    move ra 0x0
+    add rc 0x0
+    rol rc
+    rol rc
+    rol rc
+    rol rc
     ret
 encrypt_c:
-    move ra 0x8
+    add rc 0x8
+    rol rc
+    rol rc
+    rol rc
+    rol rc
     ret
 encrypt_d:
-    move ra 0x4
+    add rc 0x4
+    rol rc
+    rol rc
+    rol rc
+    rol rc
     ret
 encrypt_e:
-    move ra 0xC
+    add rc 0xC
+    rol rc
+    rol rc
+    rol rc
+    rol rc
     ret
 encrypt_f:
-    move ra 0x2
+    add rc 0x2
+    rol rc
+    rol rc
+    rol rc
+    rol rc
     ret
-	
-count:
-	.data 0x00
+
+
+
+
+topLeft:
+    .data 0x400
